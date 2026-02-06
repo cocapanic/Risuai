@@ -1126,14 +1126,16 @@ function convertCharbook(arg:{
             insertorder: book.insertion_order,
             comment: book.name ?? book.comment ?? "",
             content: content,
-            mode: (book.mode as any) ?? "normal",
+            mode: book?.extensions?.risu_mode ?? (book.mode as any) ?? "normal",
             alwaysActive: book.constant ?? false,
             selective: book.selective ?? false,
             extentions: {...extensions, risu_case_sensitive: book.case_sensitive},
             activationPercent: book.extensions?.risu_activationPercent,
             loreCache: book.extensions?.risu_loreCache ?? null,
             useRegex: book.use_regex ?? false,
-            folder: book.folder
+            folder: book?.extensions?.risu_folder ?? book.folder,
+            bookVersion: book?.extensions?.risu_bookVersion,
+            id: book?.extensions?.risu_id
         })
     }
 
@@ -1546,12 +1548,20 @@ export function convertRisuBookToCCv3Lorebook(lorebook:loreBook[], options:{
             risu_loreCache?: {
                 key:string
                 data:string[]
-            }
+            },
+            risu_mode?: string 
+            risu_bookVersion?: number
+            risu_id?: string
+            risu_folder?: string
         } = safeStructuredClone(lore.extentions ?? {})
 
         let caseSensitive = ext.risu_case_sensitive ?? false
         ext.risu_activationPercent = lore.activationPercent
         ext.risu_loreCache = lore.loreCache
+        ext.risu_mode = lore.mode
+        ext.risu_bookVersion = lore.bookVersion
+        ext.risu_id = lore.id
+        ext.risu_folder = lore.folder
 
         charBook.push({
             ...{
