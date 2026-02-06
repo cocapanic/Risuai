@@ -9,7 +9,7 @@ import { AppendableBuffer, BlankWriter, checkCharOrder, downloadFile, forageStor
 import { isTauri, isNodeServer } from "src/ts/platform"
 import { SettingsMenuIndex, ShowRealmFrameStore, selectedCharID, settingsOpen } from "./stores.svelte"
 import { checkImageType, convertImage, hasher } from "./parser.svelte"
-import { type CharacterCardV3, type LorebookEntry } from '@risuai/ccardlib'
+import { type CharacterCardV3, type Lorebook as CCv3Lorebook, type LorebookEntry } from '@risuai/ccardlib'
 import { reencodeImage } from "./process/files/inlays"
 import { PngChunk } from "./pngChunk"
 import type { OnnxModelFiles } from "./process/transformers"
@@ -1531,9 +1531,61 @@ type RisuLorebookEntry = LorebookEntry & {
     folder?: string;
 }
 
+export function convertRisuBookToCCv3Lorebook(lorebook:loreBook[], options:{
+    scanDepth?: number
+    tokenBudget?: number
+    recursiveScanning?: boolean
+    extensions?: any
+} = {}):CCv3Lorebook{
+    let charBook:RisuLorebookEntry[] = []
+
+    for(const lore of lorebook){
+        let ext:{
+            risu_case_sensitive?: boolean;
+            risu_activationPercent?: number
+            risu_loreCache?: {
+                key:string
+                data:string[]
+            }
+        } = safeStructuredClone(lore.extentions ?? {})
+
+        let caseSensitive = ext.risu_case_sensitive ?? false
+        ext.risu_activationPercent = lore.activationPercent
+        ext.risu_loreCache = lore.loreCache
+
+        charBook.push({
+            ...{
+                keys: lore.key.split(',').map(r => r.trim()),
+                secondary_keys: lore.selective ? lore.secondkey.split(',').map(r => r.trim()) : undefined,
+                content: lore.content,
+                extensions: ext,
+                enabled: true,
+                insertion_order: lore.insertorder,
+                constant: lore.alwaysActive,
+                selective:lore.selective,
+                name: lore.comment,
+                comment: lore.comment,
+                case_sensitive: caseSensitive,
+                use_regex: lore.useRegex ?? false,
+            } as LorebookEntry,
+            mode: lore.mode ?? "normal",
+            folder: lore.folder,
+        })
+    }
+
+    const l:CCv3Lorebook = {
+        scan_depth: options.scanDepth,
+        token_budget: options.tokenBudget,
+        recursive_scanning: options.recursiveScanning,
+        extensions: options.extensions ?? {},
+        entries: charBook
+    }
+
+    return l
+}
+
 export function createBaseV3(char:character){
     
-    let charBook:RisuLorebookEntry[] = []
     let assets:Array<{
         type: string
         uri: string
@@ -1570,39 +1622,6 @@ export function createBaseV3(char:character){
         })
     }
 
-    for(const lore of char.globalLore){
-        let ext:{
-            risu_case_sensitive?: boolean;
-            risu_activationPercent?: number
-            risu_loreCache?: {
-                key:string
-                data:string[]
-            }
-        } = safeStructuredClone(lore.extentions ?? {})
-
-        let caseSensitive = ext.risu_case_sensitive ?? false
-        ext.risu_activationPercent = lore.activationPercent
-        ext.risu_loreCache = lore.loreCache
-
-        charBook.push({
-            ...{
-                keys: lore.key.split(',').map(r => r.trim()),
-                secondary_keys: lore.selective ? lore.secondkey.split(',').map(r => r.trim()) : undefined,
-                content: lore.content,
-                extensions: ext,
-                enabled: true,
-                insertion_order: lore.insertorder,
-                constant: lore.alwaysActive,
-                selective:lore.selective,
-                name: lore.comment,
-                comment: lore.comment,
-                case_sensitive: caseSensitive,
-                use_regex: lore.useRegex ?? false,
-            } as LorebookEntry,
-            mode: lore.mode ?? "normal",
-            folder: lore.folder,
-        })
-    }
     char.loreExt ??= {}
 
     char.loreExt.risu_fullWordMatching = char.loreSettings?.fullWordMatching ?? false
@@ -1621,13 +1640,15 @@ export function createBaseV3(char:character){
             system_prompt: char.systemPrompt ?? '',
             post_history_instructions: char.replaceGlobalNote ?? '',
             alternate_greetings: char.alternateGreetings ?? [],
-            character_book: {
-                scan_depth: char.loreSettings?.scanDepth,
-                token_budget: char.loreSettings?.tokenBudget,
-                recursive_scanning: char.loreSettings?.recursiveScanning,
-                extensions: char.loreExt ?? {},
-                entries: charBook
-            },
+            character_book: convertRisuBookToCCv3Lorebook(
+                char.globalLore,
+                {
+                    scanDepth: char.loreSettings?.scanDepth,
+                    tokenBudget: char.loreSettings?.tokenBudget,
+                    recursiveScanning: char.loreSettings?.recursiveScanning,
+                    extensions: char.loreExt ?? {},
+                },
+            ),
             tags: char.tags ?? [],
             creator: char.additionalData?.creator ?? '',
             character_version: `${char.additionalData?.character_version}` || '',
