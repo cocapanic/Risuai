@@ -3,10 +3,11 @@ name: risuai
 services:
   risuai:
     container_name: risuai
-    image: ghcr.io/kwaroran/risuai:latest
+    build: .
+    image: risuai-custom
     restart: always
     ports:
-      - 6001:6001
+      - 38542:6001
     volumes:
       - risuai-save:/app/save
 
