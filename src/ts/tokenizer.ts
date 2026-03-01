@@ -72,7 +72,7 @@ export async function encodeWithTokenizer(data: string, tokenizerType: string): 
 export async function encode(data:string):Promise<(number[]|Uint32Array|Int32Array)>{
     const db = getDatabase();
     const modelInfo = getModelInfo(db.aiModel);
-    const pluginTokenizer = pluginV2.providerOptions.get(db.currentPluginProvider)?.tokenizer ?? "none";
+    const pluginTokenizer = pluginV2.providerOptions.get(db.primaryPluginProvider)?.tokenizer ?? "none";
 
     let cacheKey = ''
     if(db.useTokenizerCaching){
@@ -80,7 +80,7 @@ export async function encode(data:string):Promise<(number[]|Uint32Array|Int32Arr
             data,
             db.aiModel,
             db.customTokenizer,
-            db.currentPluginProvider,
+            db.primaryPluginProvider,
             db.googleClaudeTokenizing,
             modelInfo,
             pluginTokenizer
@@ -139,7 +139,7 @@ export async function encode(data:string):Promise<(number[]|Uint32Array|Int32Arr
             case 'cl100k_base':
                 result = await tikJS(data, 'cl100k_base'); break;
             case 'custom':
-                result = await pluginV2.providerOptions.get(db.currentPluginProvider)?.tokenizerFunc?.(data) ?? [0]; break;
+                result = await pluginV2.providerOptions.get(db.primaryPluginProvider)?.tokenizerFunc?.(data) ?? [0]; break;
             default:
                 result = await tikJS(data, 'o200k_base'); break; 
         }

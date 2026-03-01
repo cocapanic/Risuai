@@ -98,8 +98,11 @@ export function setDatabase(data:Database){
     if(checkNullish(data.translatorMaxResponse)){
         data.translatorMaxResponse = 1000
     }
-    if(checkNullish(data.currentPluginProvider)){
-        data.currentPluginProvider = ''
+    if(checkNullish(data.primaryPluginProvider)){
+        data.primaryPluginProvider = data.currentPluginProvider ?? ''
+    }
+    if(checkNullish(data.secondaryPluginProvider)){
+        data.secondaryPluginProvider = ''
     }
     if(checkNullish(data.plugins)){
         data.plugins = []
@@ -751,7 +754,8 @@ export interface Database{
     language: string
     translator: string
     plugins: RisuPlugin[]
-    currentPluginProvider: string
+    primaryPluginProvider: string
+    secondaryPluginProvider: string
     zoomsize:number
     customBackground:string
     textgenWebUIStreamURL:string
@@ -1452,7 +1456,8 @@ export interface botPreset{
     formatingOrder: FormatingOrderItem[]
     aiModel?: string
     subModel?:string
-    currentPluginProvider?:string
+    primaryPluginProvider?:string
+    secondaryPluginProvider?:string
     textgenWebUIStreamURL?:string
     textgenWebUIBlockingURL?:string
     forceReplaceUrl?:string
@@ -1852,7 +1857,8 @@ export const presetTemplate:botPreset = {
     formatingOrder: ['main', 'description', 'personaPrompt','chats','lastChat', 'jailbreak', 'lorebook', 'globalNote', 'authorNote'],
     aiModel: "gemini-3-flash-preview",
     subModel: "gemini-3-flash-preview",
-    currentPluginProvider: "",
+    primaryPluginProvider: "",
+    secondaryPluginProvider: "",
     textgenWebUIStreamURL: '',
     textgenWebUIBlockingURL: '',
     forceReplaceUrl: '',
@@ -1902,7 +1908,8 @@ export function saveCurrentPreset(){
         formatingOrder: db.formatingOrder,
         aiModel: db.aiModel,
         subModel: db.subModel,
-        currentPluginProvider: db.currentPluginProvider,
+        primaryPluginProvider: db.primaryPluginProvider,
+        secondaryPluginProvider: db.secondaryPluginProvider,
         textgenWebUIStreamURL: db.textgenWebUIStreamURL,
         textgenWebUIBlockingURL: db.textgenWebUIBlockingURL,
         forceReplaceUrl: db.forceReplaceUrl,
@@ -2013,7 +2020,8 @@ export function setPreset(db:Database, newPres: botPreset){
     db.formatingOrder = newPres.formatingOrder ?? db.formatingOrder
     db.aiModel = newPres.aiModel ?? db.aiModel
     db.subModel = newPres.subModel ?? db.subModel
-    db.currentPluginProvider = newPres.currentPluginProvider ?? db.currentPluginProvider
+    db.primaryPluginProvider = newPres.primaryPluginProvider ?? (newPres as any).currentPluginProvider ?? db.primaryPluginProvider
+    db.secondaryPluginProvider = newPres.secondaryPluginProvider ?? db.secondaryPluginProvider
     db.textgenWebUIStreamURL = newPres.textgenWebUIStreamURL ?? db.textgenWebUIStreamURL
     db.textgenWebUIBlockingURL = newPres.textgenWebUIBlockingURL ?? db.textgenWebUIBlockingURL
     db.forceReplaceUrl = newPres.forceReplaceUrl ?? db.forceReplaceUrl

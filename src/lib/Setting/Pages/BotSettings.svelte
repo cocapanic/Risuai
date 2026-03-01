@@ -282,9 +282,18 @@
         {/if}
     </div>
 
-    {#if DBState.db.aiModel === 'custom' || DBState.db.subModel === 'custom'}
-        <span class="text-textcolor mt-2">{language.plugin}</span>
-        <SelectInput className="mt-2 mb-4" bind:value={DBState.db.currentPluginProvider}>
+    {#if DBState.db.aiModel === 'custom'}
+        <span class="text-textcolor mt-2">{language.plugin} (Main)</span>
+        <SelectInput className="mt-2 mb-4" bind:value={DBState.db.primaryPluginProvider}>
+            <OptionInput value="">None</OptionInput>
+            {#each $customProviderStore as plugin}
+                <OptionInput value={plugin}>{plugin}</OptionInput>
+            {/each}
+        </SelectInput>
+    {/if}
+    {#if DBState.db.subModel === 'custom'}
+        <span class="text-textcolor mt-2">{language.plugin} (Sub)</span>
+        <SelectInput className="mt-2 mb-4" bind:value={DBState.db.secondaryPluginProvider}>
             <OptionInput value="">None</OptionInput>
             {#each $customProviderStore as plugin}
                 <OptionInput value={plugin}>{plugin}</OptionInput>

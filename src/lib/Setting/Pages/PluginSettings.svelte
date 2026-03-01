@@ -119,8 +119,11 @@
                             (plugin.displayName ?? plugin.name),
                     );
                     if (v) {
-                        if (DBState.db.currentPluginProvider === plugin.name) {
-                            DBState.db.currentPluginProvider = "";
+                        if (DBState.db.primaryPluginProvider === plugin.name) {
+                            DBState.db.primaryPluginProvider = "";
+                        }
+                        if (DBState.db.secondaryPluginProvider === plugin.name) {
+                            DBState.db.secondaryPluginProvider = "";
                         }
                         let plugins = DBState.db.plugins ?? [];
                         plugins.splice(i, 1);

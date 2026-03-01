@@ -723,11 +723,11 @@ async function requestOoba(arg:RequestDataArgumentExtended):Promise<requestDataR
 
 async function requestPlugin(arg:RequestDataArgumentExtended):Promise<requestDataResponse> {
     const db = getDatabase()
+    const model = arg.aiModel.startsWith('pluginmodel:::') ? arg.aiModel.replace('pluginmodel:::', '') : (arg.mode === 'model' ? db.primaryPluginProvider : db.secondaryPluginProvider)
     try {
         const formated = arg.formated
         const maxTokens = arg.maxTokens
         const bias = arg.biasString
-        const model = arg.aiModel.startsWith('pluginmodel:::') ? arg.aiModel.replace('pluginmodel:::', '') : db.currentPluginProvider
         const v2Function = pluginV2.providers.get(model)
 
         if(arg.previewBody){
@@ -800,7 +800,7 @@ async function requestPlugin(arg:RequestDataArgumentExtended):Promise<requestDat
         console.error(error)
         return {
             type: 'fail',
-            result: `Plugin Error from ${db.currentPluginProvider}: ` + JSON.stringify(error),
+            result: `Plugin Error from ${model}: ` + JSON.stringify(error),
             model: 'custom'
         }
     }
