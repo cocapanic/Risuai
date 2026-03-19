@@ -41,8 +41,11 @@ import {
     setUsingSw,
     checkCharOrder
 } from "./globalApi.svelte";
-import { isTauri } from "./platform";
+import { isTauri, isNodeServer } from "./platform";
 import { registerModelDynamic } from "./model/modellist";
+// --- Fork: Delta load ---
+import { tryDeltaLoad } from "./storage/deltaLoadDb";
+import { forkConfig } from "./storage/forkConfig";
 
 const appWindow = isTauri ? getCurrentWebviewWindow() : null
 
@@ -106,6 +109,20 @@ export async function loadData() {
             else {
                 await forageStorage.Init()
 
+                // --- Fork: Try delta load first (block-by-block from server) ---
+                let __fork_delta_loaded = false
+                if (isNodeServer && forkConfig.deltaSave.enabled) {
+                    LoadingStatusState.text = "Loading Delta Blocks..."
+                    const deltaDb = await tryDeltaLoad()
+                    if (deltaDb) {
+                        console.log('[Fork] Delta load succeeded, skipping full blob load')
+                        setDatabase(deltaDb)
+                        __fork_delta_loaded = true
+                    }
+                }
+                // --- End Fork ---
+
+                if (!__fork_delta_loaded) {
                 LoadingStatusState.text = "Loading Local Save File..."
                 let gotStorage: Uint8Array = await forageStorage.getItem('database/database.bin') as unknown as Uint8Array
                 LoadingStatusState.text = "Decoding Local Save File..."
@@ -176,6 +193,7 @@ export async function loadData() {
                 if (isDriverMode) {
                     return
                 }
+                } // end !__fork_delta_loaded
                 LoadingStatusState.text = "Checking Service Worker..."
                 if (navigator.serviceWorker) {
                     setUsingSw(true)

@@ -41,6 +41,9 @@ import { moduleUpdate } from "./process/modules";
 import type { AccountStorage } from "./storage/accountStorage";
 import { makeColdData } from "./process/coldstorage.svelte";
 import { isTauri, isNodeServer } from "./platform";
+// --- Fork: Delta save imports ---
+import { initDeltaStorage, deltaSave, isDeltaActive } from "./storage/deltaSaveEncoder";
+import { forkConfig } from "./storage/forkConfig";
 
 export const forageStorage = new AutoStorage()
 
@@ -320,6 +323,12 @@ export async function saveDb() {
         compression: forageStorage.isAccount
     })
 
+    // --- Fork: Initialize delta storage if on node server ---
+    if (isNodeServer && forkConfig.deltaSave.enabled && !forageStorage.isAccount) {
+        const { NodeStorage } = await import('./storage/nodeStorage')
+        await initDeltaStorage(new NodeStorage())
+    }
+
     $effect.root(() => {
 
         let selIdState = $state(0)
@@ -420,6 +429,20 @@ export async function saveDb() {
             }
 
             await encoder.set(db, toSave)
+
+            // --- Fork: Delta save path (only send changed blocks) ---
+            if (isDeltaActive()) {
+                const ok = await deltaSave(encoder)
+                if (!ok) {
+                    console.warn('[Fork] Delta save returned false, falling through to full save')
+                } else {
+                    // Delta save succeeded, skip full blob write
+                    // (no backup needed — blocks are individually versioned)
+                }
+            }
+
+            if (!isDeltaActive()) {
+            // --- Original full-blob save path ---
             const encoded = encoder.encode()
             if (!encoded) {
                 await sleep(1000)
@@ -443,6 +466,7 @@ export async function saveDb() {
             if (!forageStorage.isAccount) {
                 await getDbBackups()
             }
+            } // end !isDeltaActive()
             savetrys = 0
             await saveDbKei()
             await sleep(500)

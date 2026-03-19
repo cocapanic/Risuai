@@ -797,6 +797,12 @@ async function startServer() {
     }
 }
 
+// --- Fork: Delta save/load routes ---
+try {
+    const deltaRoutes = require('./deltaRoutes.cjs');
+    deltaRoutes.init(app, checkAuth, savePath, fs, path);
+} catch(e) { console.log('[Fork] Delta routes not loaded:', e.message); }
+
 (async () => {
     await startServer();
 })();
